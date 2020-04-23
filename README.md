@@ -6,7 +6,7 @@ Ce packagage implémente une version simple du jeu Tetris
 
 Vous pouvez l'installer avec pip:
 
-    pip install tetris_game
+    pip install clo-tetris-game
 
 Exemple d'usage:
 
