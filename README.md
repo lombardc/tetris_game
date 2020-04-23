@@ -6,7 +6,7 @@ Ce packagage implémente une version simple du jeu Tetris
 
 Vous pouvez l'installer avec pip:
 
-    pip install Tetris
+    pip install tetris-game-clombard
 
 Exemple d'usage:
 
