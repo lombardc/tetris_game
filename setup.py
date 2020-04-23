@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setup(
-    name="tetris_game-lombardc", # Replace with your own username
+    name="tetris_game", # Replace with your own username
     version=tetris_game.__version__,
     author="Cédric LOMBARD",
     author_email="cedric.lombard@cern.ch",
