@@ -12,7 +12,7 @@ setup(
     description="A simple implementation of the Tetris Game",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/pypa/sampleproject",
+    url="https://github.com/lombardc/tetris_game",
     packages=find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
