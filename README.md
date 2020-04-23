@@ -13,4 +13,4 @@ Exemple d'usage:
     >>> from Tetris_Game import TetrisGame
     >>> TetrisGame()
 
-Ce code est sous licence WTFPL.
+Ce code est sous licence MIT.
