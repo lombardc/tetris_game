@@ -13,4 +13,8 @@ Exemple d'usage:
     >>> from Tetris_Game import TetrisGame
     >>> TetrisGame()
 
+Ou directement dans un terminal :
+
+    playTetris
+
 Ce code est sous licence MIT.
