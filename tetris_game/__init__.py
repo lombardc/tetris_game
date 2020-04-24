@@ -7,5 +7,5 @@
 
 __version__ = "0.0.2"
 
-from tetris_game.core import Square, Line, Shape, Menu, TetrisFrame, TetrisGame
-from tetris_game.constantes import *
+from core import Square, Line, Shape, Menu, TetrisFrame, TetrisGame
+from constantes import *

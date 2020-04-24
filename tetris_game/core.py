@@ -19,7 +19,7 @@ import time
 import csv
 import os.path
 
-from tetris_game.constantes import *
+from constantes import *
 
 import os
 
@@ -432,6 +432,7 @@ class Menu:
             wr.writerow(self.score_list)
         return True
 
+print(ICON_FILE)
 class TetrisFrame(Tk):
     """This class create a whole playable 780x840 tetris game window"""
     def __init__(self):
@@ -442,6 +443,7 @@ class TetrisFrame(Tk):
         super().__init__()
         self.geometry("780x840")
         self.title("Tetris")
+        self.iconbitmap(ICON_FILE)
         self.protocol("WM_DELETE_WINDOW",self.onClose)
 
         #PlayGround Canvas

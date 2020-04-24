@@ -1,21 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import os
-dir_path = os.path.dirname(os.path.realpath(__file__))
+DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 
-MAIN_SONG = os.path.join(dir_path, 'assets/mainSong.wav')
+MAIN_SONG = os.path.join(DIR_PATH, 'assets/mainSong.wav')
 
-BRICK_IMG = os.path.join(dir_path,"assets/brique.png")
+BRICK_IMG = os.path.join(DIR_PATH,"assets/brique.png")
 
-WALL_SONG = os.path.join(dir_path,'assets/wall.wav')
+WALL_SONG = os.path.join(DIR_PATH,'assets/wall.wav')
 
-LINE_SONG = os.path.join(dir_path,'assets/line.wav')
+LINE_SONG = os.path.join(DIR_PATH,'assets/line.wav')
 
-LOOSE_SONG = os.path.join(dir_path,'assets/loose.wav')
+LOOSE_SONG = os.path.join(DIR_PATH,'assets/loose.wav')
 
-LEVEL_UP_SONG = os.path.join(dir_path,'assets/levelup.wav')
+LEVEL_UP_SONG = os.path.join(DIR_PATH,'assets/levelup.wav')
 
-SCORE_FILE = os.path.join(dir_path,"score.csv")
+SCORE_FILE = os.path.join(DIR_PATH,"score.csv")
+
+ICON_FILE = os.path.join(DIR_PATH,"assets/tetris.ico")
 
 LEVELS = {1 : 360,
           2 : 320,
