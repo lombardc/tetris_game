@@ -531,10 +531,11 @@ class TetrisFrame(Tk):
             for widget in self.winfo_children():
                 widget.destroy()
             del self.menu
-            self.__init__(self)
+            self.destroy()
+            self.__init__()
         else:
             messagebox.showinfo('Goodbye !','Thanks for playing Tetris ! Hope to see you soon !')
-            self.parent.destroy()
+            self.destroy()
 
     def autoDecreaseShape(self):
         """Method that decrease Y position of the moving shape by one. If the
