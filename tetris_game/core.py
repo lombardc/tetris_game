@@ -432,7 +432,6 @@ class Menu:
             wr.writerow(self.score_list)
         return True
 
-print(ICON_FILE)
 class TetrisFrame(Tk):
     """This class create a whole playable 780x840 tetris game window"""
     def __init__(self):
