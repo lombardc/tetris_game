@@ -19,7 +19,7 @@ import time
 import csv
 import os.path
 
-from constantes import *
+from tetris_game.constantes import *
 
 import os
 
