@@ -30,9 +30,28 @@ import pygame
 __all__ = ['Square', 'Line', 'Shape', 'Menu', 'TetrisFrame', 'TetrisGame']
 
 class Square:
+    """Class in charge of displaying a Square on the tetris main frame.
+    A square is defined by is position (col, line) and his color.
+    The size of the square is 38 * 38 px
+    2 px has been removed in order to "display" a grid.
+    In fact, the grid is made by the space between the squares.
+    The "dessin" attribute contain the canvas correspondig to the square.
+
+    A square with position x = 0 or x = 11 or y = 20 correspond to the border
+    of the playground. In this case, his displayed by an image of brick.
+    """
     photo_name = BRICK_IMG
 
     def __init__(self, col, line, canvas, parent):
+        """Create the square object :
+            - Make the square visible at the corresponding position (line, col)
+            - Check if the square correspond to the border of the playground and
+            display an image instead of a color.
+            - The is_occuped attribute (bool) is setted to true if it's not
+            possible for another square to replace this one.
+            Two cases are possible : this square is a part of the border, or
+            this square correspond to a part of a shape that has been locked
+        """
         self.canvas = canvas
         self.parent = parent
         self.x = col
@@ -55,32 +74,48 @@ class Square:
                                                        fill=self.color)
             self.img = None
 
-        # self.temp_coord_label = self.canvas.create_text((40*col + 21 , 40*line + 21 ), text="({},{})".format(self.x,self.y))
-
     def __repr__(self):
+        """Used for debug only, display the status of the square"""
         return "{}".format('*' if self.is_occuped else '0')
 
     def toogleColor(self, occupied=True, color="gray"):
+        """Method used to change the color of a Square.
+        This method is used when a line is destroyed
+        This method also update the is_occupied attribute.
+        By default, color is setted to gray (correspond to an empty square)
+        And the is_occuped attribute setted to true
+        """
         self.canvas.itemconfig(self.dessin, fill = color)
         self.is_occuped = occupied
         return True
 
-    def updateLabel(self):
-        self.canvas.itemconfigure(self.temp_coord_label, text="({},{})".format(self.x,self.y))
-
     def clean(self):
+        """ Method used to delete a square (when a line is destroyed)
+        The methode remove the canvas corresponding to the square, and the img"""
         self.canvas.delete(self.parent, self.dessin)
-        #self.canvas.delete(self.parent, self.temp_coord_label)
         del self.img
 
     def moveSquare(self, dY):
+        """ This method move the canvas on the Y axis and update the square
+        y position attribute. Method used when a moving shape goes down"""
         self.y += dY
         self.canvas.move(self.dessin, 0, 40 * dY)
-        #self.canvas.move(self.temp_coord_label, 0, 40 * dY)
-        #self.updateLabel()
 
 class Line:
+    """ The line class represent an entire line in the main Tetris PlayGround
+    A line is composed by 12 square, including the borders. This class provide
+    the graphical implementation of a line, and methods associated to a Line
+    object in the tetris game (Like removing a line).
+    """
     def __init__(self, y, canvas, parent, is_protected = False):
+        """
+            Create the line object.
+            - Create a list of 12 Square object with the good coordinates.
+            - By creating the square objetcs, they're also displayed (see Square)
+            - The is_protected attribute is only used for the very last line,
+            corresponding to the bottom border of the playground.
+
+        """
         self.canvas = canvas
         self.parent = parent
         self.y = y
@@ -90,49 +125,92 @@ class Line:
             self.square_list.append(Square(x, self.y, self.canvas, self.parent))
 
     def __repr__(self):
+        """ Only used for debug, display an array corresponding to the line.
+        Ex. [1,0,0,1,1,0,1,0,0,0,0,1] 1 Correspond to square wich have
+        is_occuped setted to true, 0 others"""
+
         return str([(1 if x.is_occuped else 0) for x in self.square_list]) + str(self.y)
 
     def binLine(self):
-        #Return the int representation of the list
+        """ Method used to check if a shape is able to move down or no.
+        Bin line return the binary interpretation of the line.
+        Exemple : a line like this [1,1,1,1,1,1,1,1,1,1,1,1] will return 4095
+        A line like this [1,0,0,0,0,1,1,0,0,0,0,1,1] will return 2145
+        """
         bin = 0
         for index, x in enumerate(self.square_list[::-1]):
             bin += (2**index if x.is_occuped else 0)
         return bin
 
     def isLoose(self):
+        """ This method is used to check if the game can continue or no.
+        In tetris, the game over when any square of the last line is occupied.
+        This method check if any of the square (excludin the first and the last
+        ones) has is is_occupied attribute setted to True"""
         start, *line, end = [x.is_occuped for x in self.square_list]
         return any(line)
 
     def lineFull(self):
+        """ This method is used to check if a line is full or no.
+        A full line correspond to a line where all the square have the
+        is_occupied attribute setted to true"""
         return all([x.is_occuped for x in self.square_list])
 
     def moveLine(self, dY):
+        """ Method used to move down a line.
+        Update the y attribute with the dY parameters, and move all the squares
+        of the line by calling the moveSquare method of the Square class"""
         self.y += dY
         for square in self.square_list:
             square.moveSquare(dY)
 
     def clean(self):
+        """ The clean method is used to remove of a line from the playground.
+        It removes of the square of the square_list => Unshow the square and
+        del the square instance. Be carreful, the clean method does not delette
+        the line instance"""
         for square in self.square_list :
             square.clean()
             del(square)
 
 class Shape:
-    def __init__(self, shape, rotation, shape_color, col, line):
-        self.shape_type = shape
+    """
+        Class used to represent a shape used in the tetris_game.
+        This class allow the tetris_game class to control a moving shaping
+        (go down, rotate, lock)
+    """
+    def __init__(self, shape_type, rotation, shape_color, col, line):
+        """ Create a shape object
+        Shape_type is the type of shape as str ("T", "I", "O", "S", "Z", "L", "J")
+        Rotation is an 0<=Int<4 corresponding to the willing rotation
+        Shape_color is an str corresponding to the color ("red", "blue", ...)
+        line and col is the position of the shape. The position is setted by
+        the [0][0] index of the corresponding shape (see constantes.SHAPES)
+        Finaly, the shape correspond to the good shape (as an 2D-array)"""
+
+        self.shape_type = shape_type
         self.shape_rotation = rotation
-        self.shape = SHAPES[shape][rotation]
+        self.shape = SHAPES[shape_type][rotation]
         self.color = shape_color
         self.col = col
         self.line = line
 
     def canMoveShape(self, dX, dY, playground, rotate = False):
-        #catching the shape :
+        """ canMoveShape method returns True if the shape can move of dX, dY in
+        the specified playground. By default, the shape is the shape itself. By
+        setting rotate to true, check if the rotation is possible by using the
+        next rotation index of the shape instead of the current one"""
+        #Getting the good shape
         if not rotate :
             shape = self.shape
         else :
             shape = SHAPES[self.shape_type][(self.shape_rotation +1)%4]
-        #Vérifier que l'on peut descendre
-        #Construire les 4 lignes correspondantes au shape, et leur index
+
+        #First, building an array of four arrays, corresponding to the four Line
+        #that the shape will occup AFTER the move.
+        #Here, we don't care about dY.
+
+        #Building an empty array of 4 line and 12 cols
         table = []
         for y_temp in range(0,4):
             line = []
@@ -140,31 +218,45 @@ class Shape:
                 line.append(0)
             table.append(line)
 
+        #Filling the table array with the value of the shape, at the desired
+        #Position.
         for y_temp in range(len(shape)):
             for x_temp in range(len(shape[y_temp])):
                 if x_temp + self.col + dX < len(table[y_temp]):
+                    #Here we fill table with the good value
                     table[y_temp][x_temp + self.col + dX] = shape[y_temp][x_temp]
-
-
-        for y in range(0, 4):
+            #Here, an entire line has been filled. Before filled the next one,
+            #Convert the line to his binary version
             bin_table = 0
-            for index, x in enumerate(table[y][::-1]):
+            for index, x in enumerate(table[y_temp][::-1]):
                 bin_table+= x*2**index
-            table[y]= bin_table
-        #Here table contains 4 lines with the new position of the shape as int
-        #Here we don't care about Y cause we are going to test it after
-        table_compare = []
-        if self.line + dY < 0 :
-            for index in range(self.line + dY, 0):
-                table_compare.append(0b100000000001)
+            table[y_temp]= bin_table
 
+        #Here table contains 4 lines with the new position of the shape as int
+        # An exemple of what does table look like :
+        # [[2048],
+        # [2408],
+        # [2048],
+        # [2048]]
+
+        #Now, we hava to create a table with the same shape of table, but
+        #corresponding to the current status of the playground at the desired
+        #positions. Here, we exctract all the line, so we don't care about dX
+        #we use dY + the current position to extract to good lines
+        table_compare = []
+        #Filling the table with empty lines (except the border) in case
+        #The expected position of the shape is on top of the playground
+        for index in range(self.line + dY, 0):
+            table_compare.append(0b100000000001)
+
+        #Adding directly the binary representation of the desired playground lines
         for line in playground[max(self.line + dY,0) : self.line + dY + 4]:
             table_compare.append(line.binLine())
 
         #Completing the table to ensure that we have 4 lines
-        if len(table_compare) < 4 :
-            for index in range(4-len(table_compare), 5):
-                table_compare.append(0b100000000001)
+        #In case the shape is on the really bottom
+        for index in range(4-len(table_compare), 5):
+            table_compare.append(0b100000000001)
 
         #Here we have to tables :
         #1) table -> It's a table of four rows with the desired position of the shape
@@ -178,10 +270,14 @@ class Shape:
         return True
 
     def rotateShape(self):
+        """Method used to update the shape array and it's rotation index"""
         self.shape = SHAPES[self.shape_type][(self.shape_rotation +1)%4]
         self.shape_rotation += 1
 
     def drawShape(self, playground, dessin = True):
+        """Method used to draw the shape on the specified playground.
+        By default, this method draw the shape. By specifying dessin = False,
+        the methode undraw the shape"""
         for line_number, line in enumerate(self.shape) :
             for col_number, col in enumerate(line) :
                 if self.shape[line_number][col_number] and line_number + self.line >=0 and col_number + self.col>= 0 :
@@ -191,13 +287,22 @@ class Shape:
                         playground[line_number + self.line].square_list[col_number + self.col].toogleColor(occupied=False)
 
     def lockShape(self, playground):
+        """Method used to lock a shape, meanwile the corresponding square
+        id_occuped attributes are setted to True"""
         for line_number, line in enumerate(self.shape) :
             for col_number, col in enumerate(line) :
                 if self.shape[line_number][col_number] and line_number + self.line >=0 and col_number + self.col>= 0 :
                     playground[line_number + self.line].square_list[col_number + self.col].toogleColor(occupied=True, color=self.color)
 
 class Menu:
+    """The menu Class create a Tk Canvas with all the game informations :
+    Score, Future Shape, Number of line destroyed, Music Control"""
+
     def __init__(self, parent):
+        """The init method only need the parent window to put the canvas in.abs
+            The init method will call the load_score method to get the highest_score
+            ever. It will also start the music, at 50% power by default
+        """
         self.parent = parent
         self.canvas = Canvas(self.parent, bg="black", height=600, width=300, bd=0, highlightthickness=0)
         self.canvas.place(x=480, y=0)
@@ -256,6 +361,11 @@ class Menu:
         self.volume_control.place(x=22,y=40)
 
     def increase_line_level(self, nb_line, current_level):
+        """This method increase the number of line destroyed in the canvas.
+        It also increase the level each time that the number of line is a multiple
+        of 10. In this case, the level label is also updated.
+        This method return the value of the current level, and the corresponding
+        speedrate"""
         self.number_line += nb_line
         self.canvas.itemconfigure(self.lignes_label, text=str(self.number_line))
         level = self.number_line//10 + 1
@@ -266,14 +376,18 @@ class Menu:
         return level_speed, level
 
     def change_volume(self, volume_var):
+        """ This method update the volume level to volume_var for all sounds"""
         for sound in self.list_song :
             sound.set_volume(int(volume_var)/100)
 
     def stop_music(self):
+        """ This methods stop all the songs"""
         for sound in self.list_song :
             sound.stop()
 
     def update_future_shape(self, shape, color):
+        """ Update the future shape representation with the given shape and the
+        good color. shape has to be an array, and not an instance of shape"""
         for index_line, line in enumerate(self.future_shape_array):
             for index_col, col in enumerate(line) :
                 if shape[index_line][index_col] :
@@ -282,6 +396,11 @@ class Menu:
                     self.canvas.itemconfig(self.future_shape_array[index_line][index_col], fill = "gray")
 
     def load_score(self):
+        """ This method load the highest score. It will try to open the file
+        score.csv. If this file does not exist, it will be created.
+        Score.csv is a one line csv file with all the past score seperated by
+        a comma. It will create the score_list attribute, and the highest_score
+        attribute"""
         if not os.path.isfile(SCORE_FILE) :
             f = open(SCORE_FILE, "w")
             f.close()
@@ -295,6 +414,9 @@ class Menu:
         self.high_score = int(max(self.score_list or [0]))
 
     def update_score(self, delta):
+        """This method update both the score_label and the highest_score_label.
+        If the current score is upper than the highest, the highest score is
+        updated and the highest_score_label also."""
         self.current_score += delta
         self.canvas.itemconfigure(self.current_score_label, text=format(self.current_score,",").replace(",", " "))
         if self.current_score > self.high_score:
@@ -302,28 +424,34 @@ class Menu:
             self.canvas.itemconfigure(self.highest_score_label, text=format(self.high_score,",").replace(",", " "))
 
     def save_score(self):
+        """This method append the current score to the score list and save it
+        to the score.csv file"""
         self.score_list.append(self.current_score)
         with open(SCORE_FILE, 'w', newline='') as myfile:
             wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
             wr.writerow(self.score_list)
         return True
 
-class TetrisFrame(Frame):
-    def __init__(self, parent):
-        Frame.__init__(self)
-        self.parent = parent
-        self.parent.geometry("780x840")
-        self.parent.title("Tetris")
-        self.parent.protocol("WM_DELETE_WINDOW",self.onClose)
+class TetrisFrame(Tk):
+    """This class create a whole playable 780x840 tetris game window"""
+    def __init__(self):
+        """The init method setup the game.
+        It configures the main window, create the playground canvas, init the
+        game menu, bind the keyboard and start the main loop.
+        """
+        super().__init__()
+        self.geometry("780x840")
+        self.title("Tetris")
+        self.protocol("WM_DELETE_WINDOW",self.onClose)
 
         #PlayGround Canvas
-        self.canvas = Canvas(self.parent, bg="black", height=840, width=480, bd=0, highlightthickness=0)
+        self.canvas = Canvas(self, bg="black", height=840, width=480, bd=0, highlightthickness=0)
         self.canvas.place(x=0, y=0)
 
         #Creating playground as a grid
         self.playground = []
         for y in range(0, 21, 1):
-            self.playground.append(Line(y, self.canvas, self.parent, is_protected = (True if y == 20 else False)))
+            self.playground.append(Line(y, self.canvas, self, is_protected = (True if y == 20 else False)))
 
         #Shapes containers:
         self.moving_shape = None
@@ -334,17 +462,26 @@ class TetrisFrame(Frame):
         self.future_shape = self.getRandomShape()
 
         #Binding Keys
-        self.parent.bind("<Any-KeyPress>", self.onKeypress)
+        self.bind("<Any-KeyPress>", self.__onKeypress)
 
         #initing the menu panel
-        self.menu = Menu(self.parent)
+        self.menu = Menu(self)
         self.menu.update_future_shape(self.future_shape.shape, self.future_shape.color)
         self.current_speed, self.current_level = self.menu.increase_line_level(0, 0)
-        self.animate()
+        self.__animate()
 
-    def onKeypress(self, event):
+    def __onKeypress(self, event):
+        """Method called when a key is pressed. By default the entire keyboard
+        is bindend, but we only trigger the left, right, down and space keys"""
         if event.keysym == "Down":
+            #A press on the down key decrease the moving shape
             self.autoDecreaseShape()
+        #Left and right allows the shape to move on X
+        #Space allows the shape to rotate
+        #In any of this three cases, we do the followings :
+        # 1) Check if the shape can move to the desired position
+        #   If yes : undraw the shape, move it, draw again
+        #   If not : play a "block" sound
         elif event.keysym == "Left":
             if self.moving_shape.canMoveShape(-1, 0, self.playground):
                 self.moving_shape.drawShape(self.playground, dessin = False)
@@ -367,51 +504,80 @@ class TetrisFrame(Frame):
             else :
                 self.menu.wall_sound.play()
 
-    def animate(self):
+    def __animate(self):
+        """ This method is the main one. It is used to loop again and again while
+        the game is not finish.
+        Each time, we first clean the playground (removing lines that are full)
+        Then check if the game is loose or no.
+        If the game cam continue, comme back to this loop after the current_speed
+        time
+        """
         self.cleanPlayground()
         if self.playground[0].isLoose() :
             self.gameLoose()
         else :
             self.autoDecreaseShape()
-            self.master.after(self.current_speed, self.animate)
+            self.after(self.current_speed, self.__animate)
 
     def gameLoose(self):
+        """Method called when the game is loose.
+        It save the score, stop the main sound and play a looser song.
+        The it ask the player to play again.
+        If yes, reinit the game, if no, stop the program"""
         self.menu.save_score()
         self.menu.main_sound.stop()
         self.menu.loose_sound.play()
         if messagebox.askquestion ('You loose...','Want to play again ?',icon = 'question') == 'yes':
-            for widget in self.parent.winfo_children():
+            for widget in self.winfo_children():
                 widget.destroy()
             del self.menu
-            self.__init__(self.parent)
+            self.__init__(self)
         else:
             messagebox.showinfo('Goodbye !','Thanks for playing Tetris ! Hope to see you soon !')
             self.parent.destroy()
 
     def autoDecreaseShape(self):
+        """Method that decrease Y position of the moving shape by one. If the
+        shape cannot move anymore, it's been locked, the future shape is setted
+        as the new moving shape, and a new future shape is created"""
+
+        #Check if shape can go Down
         if self.moving_shape.canMoveShape(0, 1, self.playground):
+            #If shape can go down, undraw it, move it, and redraw it
             self.moving_shape.drawShape(self.playground, dessin = False)
             self.moving_shape.line +=1
             self.moving_shape.drawShape(self.playground, dessin = True)
         else :
+            #If not, lock the shape using the lockShape method
             self.moving_shape.lockShape(self.playground)
             self.moving_shape, self.future_shape = self.future_shape, self.getRandomShape()
             self.menu.update_future_shape(self.future_shape.shape, self.future_shape.color)
 
     def getRandomShape(self):
+        """Return a randomize shape instance :
+            - Random Shape
+            - Random rotation
+            - Random Color"""
         shape_type, shape_positions = random.choice(list(SHAPES.items()))
         shape_position = random.randint(0, len(shape_positions)-1)
         shape_color =  random.choice(COLORS)
         return Shape(shape_type, shape_position, shape_color, col=3, line=-4)
 
     def cleanPlayground(self):
-        index_to_remove = []
+        """This method removes lines that are full from the playground.
+        If lines are removed, it call the Menu instance to modify the level, the
+        speed the score and the number of lines destroyed"""
+
+        #Creating an array wich aim to contain the lines to remove
+        lines_to_remove = []
         for index, line in enumerate(self.playground):
             if line.lineFull() and not line.is_protected :
-                index_to_remove.append(line)
+                lines_to_remove.append(line)
 
-        if index_to_remove:
-            nb_lines = len(index_to_remove)
+        #If they are line to remove, update the score, play the "woouf" song
+        #And update the level and the refresh speed
+        if lines_to_remove:
+            nb_lines = len(lines_to_remove)
             self.menu.line_sound.play()
             if nb_lines == 4:
                 delta = 1200 * self.current_level
@@ -423,28 +589,36 @@ class TetrisFrame(Frame):
                 delta = 40 * self.current_level
             self.menu.update_score(delta)
             self.current_speed, self.current_level = self.menu.increase_line_level(nb_lines, self.current_level)
-        for line_to_del in index_to_remove :
+
+        #Remove all the line that are full and replace them by an empty line
+        #on top of the playground
+        #It's important to clean the line before deleting it in order to remove
+        #the associated canvas
+        for line_to_del in lines_to_remove :
             self.playground.remove(line_to_del)
-            self.playground = [Line(0, self.canvas, self.parent)] + self.playground
+            self.playground = [Line(0, self.canvas, self)] + self.playground
             line_to_del.clean()
             del(line_to_del)
 
-
+        #Now we need to reindex all the line and move down the line that was upper
+        #line that have been removed
         for num_line in range(0,20):
             if self.playground[num_line].y != num_line :
                 #Move the line with num_line - y
                 self.playground[num_line].moveLine(num_line -self.playground[num_line].y )
 
     def onClose(self):
+        #On close method is called when the user click the red cross.
+        #It save the score, and stop the music player.
         self.menu.save_score()
         self.menu.stop_music()
         try:
-            self.parent.destroy()
+            self.destroy()
         except RuntimeWarning as e:
             print(e)
 
 def TetrisGame():
-    TetrisFrame(Tk()).mainloop()
+    TetrisFrame().mainloop()
 
 if __name__ == "__main__":
     TetrisGame()
